@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+
+  release:
+    runs-on: ubuntu-latest
+    container: golang:1.25
+    permissions:
+      contents: write
+    env:
+      BUILD_CLIENT_DIR: 'bin/client'
+      BINARY_CLIENT_NAME: 'goph-keeper'
+    steps:
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache deps
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set env
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/} BUILD_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Vet
+        run: |
+          go vet ./...
+
+      - name: Build linux client
+        run: |
+          go build -a -gcflags "all=-N -l" -e GOOS=linux -e GOARCH=amd64 -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME} cmd/client/
+
+      - name: Build windows client
+        run: |
+          go build -a -gcflags "all=-N -l" -e GOOS=windows -e GOARCH=amd64 -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-windows-amd64.exe cmd/client/
+
+      - name: Build darwin-amd64 client
+        run: |
+          go build -a -gcflags "all=-N -l" -e GOOS=darwin -e GOARCH=amd64 -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-darwin-amd64 cmd/client/
+
+      - name: Build darwin-arm64 client
+        run: |
+          go build -a -gcflags "all=-N -l" -e GOOS=darwin -e GOARCH=arm64 -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-darwin-arm64 cmd/client/
+
+      - name: Release artifacts
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "bin/*"
+          allowUpdates: true

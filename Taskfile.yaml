@@ -1,0 +1,154 @@
+# https://taskfile.dev
+
+version: '3'
+
+env:
+  # проект.
+  PROJECT_NAME: goph-keeper
+  # пользователь.
+  CURRENT_UID:
+    sh: id -u
+  # группа пользователя.
+  CURRENT_GID:
+    sh: id -g
+  # локальный, внешний порт.
+  GRPC_LOCAL_PORT: 5001
+  # внутренний порт сервиса лояльности.
+  GRPC_SRV_PORT: 5001
+  # dsn к postgres.
+  DATABASE_URI: postgres://postgres:postgres@192.168.1.46:5428/goph_keeper?sslmode=disable
+  # соль для jwt токена.
+  JWT_SECRET: auth_secret
+  # директория бинарников клиента
+  BUILD_CLIENT_DIR: /app/bin/client
+  # префикс имени клиента
+  BINARY_CLIENT_NAME: goph-keeper
+  # дата сборки
+  BUILD_DATE: $(date +%Y-%m-%d)
+tasks:
+  build:
+    desc: Билд образов docker.
+    dir: ./docker
+    cmds:
+      - docker compose -f docker-compose.build.yml build app
+
+  compose:*:
+    dir: ./docker
+    cmds:
+      - docker compose -p {{.PROJECT_NAME}} {{index .MATCH 0}}
+
+  docker-run:*:
+    desc: Запускает команду под докером.
+    dir: ./docker
+    cmds:
+      - docker run --rm -v {{.USER_WORKING_DIR}}:/app {{.ARGS | default ""}} -it {{.PROJECT_NAME}}-app {{index .MATCH 0}}
+
+  gen:contracts:
+    desc: Генерирует proto контракты.
+    cmds:
+      - protoc --go_out=. --go_opt=paths=import --go-grpc_out=. --go-grpc_opt=paths=import contracts/*
+
+  cs:
+    run: once
+    desc: Форматирование стиля.
+    cmds:
+      - task: docker-run:gofumpt -w -extra internal/ cmd/
+
+  lint:
+    desc: Линтеры
+    cmds:
+      - task: docker-run:golangci-lint run
+      - task: docker-run:godoclint -config .godoc-lint.yaml ./...
+
+  unit:
+    desc: Юнит тесты
+    cmds:
+      - task: docker-run:sh -c "go test ./..."
+
+  build:client:linux:
+    desc: Билд клиента для Linux.
+    run: once
+    deps:
+      - cs
+    cmds:
+      - task: docker-run:go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion={{.RELEASE_VERSION | default "N/A"}} -X main.buildDate={{.BUILD_DATE}}" -o {{.BUILD_CLIENT_DIR}}/{{.BINARY_CLIENT_NAME}} /app/cmd/client/
+        vars:
+          ARGS: -e GOOS=linux -e GOARCH=amd64
+      - task: docker-run:chown {{.CURRENT_GID}}:{{.CURRENT_UID}} {{.BUILD_CLIENT_DIR}}/{{.BINARY_CLIENT_NAME}}
+
+  build:client:windows:
+    desc: Билд клиента для Windows.
+    run: once
+    deps:
+      - cs
+    cmds:
+      - task: docker-run:go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion={{.RELEASE_VERSION | default "N/A"}} -X main.buildDate={{.BUILD_DATE}}" -o {{.BUILD_CLIENT_DIR}}/{{.BINARY_CLIENT_NAME}}-windows-amd64.exe /app/cmd/client/
+        vars:
+          ARGS: -e GOOS=windows -e GOARCH=amd64
+      - task: docker-run:chown {{.CURRENT_GID}}:{{.CURRENT_UID}} {{.BUILD_CLIENT_DIR}}/{{.BINARY_CLIENT_NAME}}-windows-amd64.exe
+
+  build:client:darwin-amd64:
+    desc: Билд клиента для macOS (Intel).
+    run: once
+    deps:
+      - cs
+    cmds:
+      - task: docker-run:go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion={{.RELEASE_VERSION | default "N/A"}} -X main.buildDate={{.BUILD_DATE}}" -o {{.BUILD_CLIENT_DIR}}/{{.BINARY_CLIENT_NAME}}-darwin-amd64 /app/cmd/client/
+        vars:
+          ARGS: -e GOOS=darwin -e GOARCH=amd64
+      - task: docker-run:chown {{.CURRENT_GID}}:{{.CURRENT_UID}} {{.BUILD_CLIENT_DIR}}/{{.BINARY_CLIENT_NAME}}-darwin-amd64
+
+  build:client:darwin-arm64:
+    desc: Билд клиента для macOS (Apple Silicon).
+    run: once
+    deps:
+      - cs
+    cmds:
+      - task: docker-run:go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion={{.RELEASE_VERSION | default "N/A"}} -X main.buildDate={{.BUILD_DATE}}" -o {{.BUILD_CLIENT_DIR}}/{{.BINARY_CLIENT_NAME}}-darwin-arm64 /app/cmd/client/
+        vars:
+          ARGS: -e GOOS=darwin -e GOARCH=arm64
+      - task: docker-run:chown {{.CURRENT_GID}}:{{.CURRENT_UID}} {{.BUILD_CLIENT_DIR}}/{{.BINARY_CLIENT_NAME}}-darwin-arm64
+
+  build:client:all:
+    desc: Билд всех платформ.
+    cmds:
+      - task: build:client:linux
+      - task: build:client:windows
+      - task: build:client:darwin-amd64
+      - task: build:client:darwin-arm64
+
+  build:server:
+    desc: Билд сервера из докера.
+    run: once
+    deps:
+      - cs
+    cmds:
+      - task: docker-run:go build -gcflags "all=-N -l" -o /app/bin/server/server /app/cmd/server/
+
+  up:
+    desc: Поднимает сервер и БД.
+    cmds:
+      - task: up:db
+      - task: up:server
+
+  up:server:
+    desc: Поднимает сервер.
+    deps:
+      - build:server
+    cmds:
+      - task: compose:up -d server
+
+  up:db:
+    desc: Поднимает БД.
+    cmds:
+      - task: compose:up -d db
+
+  down:
+    desc: Останавливает сервер и БД.
+    cmds:
+      - task: compose:down server db
+
+  down:*:
+    desc: Останавливает сервис.
+    cmds:
+      - task: compose:down {{index .MATCH 0}}
