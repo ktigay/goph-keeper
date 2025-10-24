@@ -1,0 +1,40 @@
+name: linters
+
+on: [pull_request]
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    container: golang:1.25
+    steps:
+       - name: Install Task
+         uses: arduino/setup-task@v2
+         with:
+           version: 3.x
+           repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+       - name: Checkout code
+         uses: actions/checkout@v4
+
+       - name: Set up Go
+         uses: actions/setup-go@v6
+         with:
+           go-version: '^1.25'
+
+       - name: Git config
+         run: git config --global --add safe.directory '*'
+
+       - name: Install godoclint
+         run: go install github.com/godoc-lint/godoc-lint/cmd/godoclint@v0.10.1
+
+       - name: Install golangci-lint
+         run: |
+           go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+       - name: Run golangci-lint
+         run: |
+           golangci-lint run
+
+       - name: Run godoclint
+         run: |
+           godoclint -config .godoc-lint.yaml ./...

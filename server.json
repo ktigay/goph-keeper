@@ -1,0 +1,6 @@
+{
+  "grpc_host": ":5001",
+  "log_level": "debug",
+  "database_uri": "postgres://postgres:postgres@192.168.1.46:5428/goph_keeper?sslmode=disable",
+  "jwt_secret": "auth_secret"
+}
