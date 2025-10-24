@@ -74,5 +74,5 @@ jobs:
       - name: Release artifacts
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "bin/*"
+          artifacts: "bin/client/*"
           allowUpdates: true
