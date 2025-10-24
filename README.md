@@ -2,7 +2,7 @@
 
 ## Подготовленные бинарники
 
-Можно скачать [тут](https://github.com/ktigay/goph-keeper/releases/latest/download/)
+Можно скачать [тут](https://github.com/ktigay/goph-keeper/releases/latest)
 
 ## Локальный запуск
 

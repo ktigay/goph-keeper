@@ -72,17 +72,20 @@ jobs:
           go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-darwin-arm64 ./cmd/client/
 
       - name: Build server
+        env:
+          GOOS: linux
+          GOARCH: amd64
         run: |
-          go build -gcflags "all=-N -l" -o ./bin/server/server ./cmd/server/
+          go build -gcflags "all=-N -l" -o ./bin/server/${BINARY_CLIENT_NAME}-server ./cmd/server/
 
       - name: Release client artifacts
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "bin/client/*"
+          artifacts: "bin/client/goph-keeper*"
           allowUpdates: true
 
       - name: Release server artifacts
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "bin/server/*"
+          artifacts: "bin/server/goph-keeper*"
           allowUpdates: true
