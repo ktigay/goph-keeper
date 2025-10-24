@@ -71,8 +71,18 @@ jobs:
         run: |
           go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-darwin-arm64 ./cmd/client/
 
-      - name: Release artifacts
+      - name: Build server
+        run: |
+          go build -gcflags "all=-N -l" -o ./bin/server/server ./cmd/server/
+
+      - name: Release client artifacts
         uses: ncipollo/release-action@v1
         with:
           artifacts: "bin/client/*"
+          allowUpdates: true
+
+      - name: Release server artifacts
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "bin/server/*"
           allowUpdates: true
