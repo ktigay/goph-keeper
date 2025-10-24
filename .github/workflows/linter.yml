@@ -32,8 +32,9 @@ jobs:
        - name: Git config
          run: git config --global --add safe.directory '*'
 
-       - name: Install godoclint
-         run: go install github.com/godoc-lint/godoc-lint/cmd/godoclint@v0.10.1
+       - name: Run vet
+         run: |
+           go vet ./...
 
        - name: Install golangci-lint
          run: |
@@ -42,6 +43,9 @@ jobs:
        - name: Run golangci-lint
          run: |
            golangci-lint run
+
+       - name: Install godoclint
+         run: go install github.com/godoc-lint/godoc-lint/cmd/godoclint@v0.10.1
 
        - name: Run godoclint
          run: |

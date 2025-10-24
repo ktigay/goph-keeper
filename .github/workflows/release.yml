@@ -15,6 +15,7 @@ jobs:
     env:
       BUILD_CLIENT_DIR: './bin/client'
       BINARY_CLIENT_NAME: 'goph-keeper'
+      CLIENT_CMD_PATH: './cmd/client/'
     steps:
       - name: Install Task
         uses: arduino/setup-task@v2
@@ -36,42 +37,41 @@ jobs:
       - name: Git config
         run: git config --global --add safe.directory '*'
 
-      - name: Set env
+      - name: Set release version
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-
-      - name: Vet
-        run: |
-          go vet ./...
 
       - name: Build linux client
         env:
           GOOS: linux
           GOARCH: amd64
         run: |
-          go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME} ./cmd/client/
+          go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME} $CLIENT_CMD_PATH
 
       - name: Build windows client
         env:
           GOOS: windows
           GOARCH: amd64
+          POSTFIX: windows-amd64.exe
         run: |
-          go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-windows-amd64.exe ./cmd/client/
+          go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-${POSTFIX} $CLIENT_CMD_PATH
 
       - name: Build darwin-amd64 client
         env:
           GOOS: darwin
           GOARCH: amd64
+          POSTFIX: darwin-amd64
         run: |
-          go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-darwin-amd64 ./cmd/client/
+          go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-${POSTFIX} $CLIENT_CMD_PATH
 
       - name: Build darwin-arm64 client
         env:
           GOOS: darwin
           GOARCH: arm64
+          POSTFIX: darwin-arm64
         run: |
-          go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-darwin-arm64 ./cmd/client/
+          go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-${POSTFIX} $CLIENT_CMD_PATH
 
-      - name: Build server
+      - name: Build linux server
         env:
           GOOS: linux
           GOARCH: amd64
