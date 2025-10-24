@@ -41,20 +41,32 @@ jobs:
           go vet ./...
 
       - name: Build linux client
+        env:
+          GOOS: linux
+          GOARCH: amd64
         run: |
-          go build -a -gcflags "all=-N -l" -e GOOS=linux -e GOARCH=amd64 -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME} cmd/client/
+          go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME} cmd/client/
 
       - name: Build windows client
+        env:
+          GOOS: windows
+          GOARCH: amd64
         run: |
-          go build -a -gcflags "all=-N -l" -e GOOS=windows -e GOARCH=amd64 -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-windows-amd64.exe cmd/client/
+          go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-windows-amd64.exe cmd/client/
 
       - name: Build darwin-amd64 client
+        env:
+          GOOS: darwin
+          GOARCH: amd64
         run: |
-          go build -a -gcflags "all=-N -l" -e GOOS=darwin -e GOARCH=amd64 -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-darwin-amd64 cmd/client/
+          go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-darwin-amd64 cmd/client/
 
       - name: Build darwin-arm64 client
+        env:
+          GOOS: darwin
+          GOARCH: arm64
         run: |
-          go build -a -gcflags "all=-N -l" -e GOOS=darwin -e GOARCH=arm64 -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-darwin-arm64 cmd/client/
+          go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-darwin-arm64 cmd/client/
 
       - name: Release artifacts
         uses: ncipollo/release-action@v1
