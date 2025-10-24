@@ -22,7 +22,7 @@ jobs:
            path: ~/go/pkg/mod
            key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
            restore-keys: |
-             ${{ runner.os }}-go-
+             ${{ runner.os }}-golint-
 
        - name: Git config
          run: git config --global --add safe.directory '*'
