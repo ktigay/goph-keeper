@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      BUILD_CLIENT_DIR: './bin/client'
+      BINARY_CLIENT_NAME: 'goph-keeper'
+      CLIENT_CMD_PATH: './cmd/client/'
+    steps:
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "^1.25"
+          cache: true
+
+      - name: Git config
+        run: git config --global --add safe.directory '*'
+
+      - name: Set release version
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
+      - name: Build linux client
+        env:
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME} $CLIENT_CMD_PATH
+
+      - name: Build windows client
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          POSTFIX: windows-amd64.exe
+        run: |
+          go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-${POSTFIX} $CLIENT_CMD_PATH
+
+      - name: Build darwin-amd64 client
+        env:
+          GOOS: darwin
+          GOARCH: amd64
+          POSTFIX: darwin-amd64
+        run: |
+          go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-${POSTFIX} $CLIENT_CMD_PATH
+
+      - name: Build darwin-arm64 client
+        env:
+          GOOS: darwin
+          GOARCH: arm64
+          POSTFIX: darwin-arm64
+        run: |
+          go build -a -gcflags "all=-N -l" -ldflags "-X main.buildVersion=$RELEASE_VERSION -X main.buildDate=$(date +%Y-%m-%d)" -o ${BUILD_CLIENT_DIR}/${BINARY_CLIENT_NAME}-${POSTFIX} $CLIENT_CMD_PATH
+
+      - name: Build linux server
+        env:
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          go build -gcflags "all=-N -l" -o ./bin/server/${BINARY_CLIENT_NAME}-server ./cmd/server/
+
+      - name: Release client artifacts
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "bin/client/goph-keeper*"
+          allowUpdates: true
+
+      - name: Release server artifacts
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "bin/server/goph-keeper*"
+          allowUpdates: true

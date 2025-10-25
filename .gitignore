@@ -7,6 +7,11 @@
 *.dll
 *.so
 *.dylib
+*.log
+
+bin/client/goph-keeper*
+bin/client/client.sqlite
+bin/server/server*
 
 # Test binary, built with `go test -c`
 *.test
@@ -18,7 +23,7 @@ coverage.*
 profile.cov
 
 # Dependency directories (remove the comment below to include it)
-# vendor/
+vendor/
 
 # Go workspace file
 go.work
@@ -28,5 +33,5 @@ go.work.sum
 .env
 
 # Editor/IDE
-# .idea/
+.idea/
 # .vscode/

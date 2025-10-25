@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package user.data.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "internal/contracts/v1/data";
+
+message MetaData {
+  string title = 1;
+  string value = 2;
+}
+
+message UserDataItem {
+  enum DataType {
+    TEXT = 0;
+    BINARY = 1;
+    CARD = 2;
+  }
+  string uuid = 1;
+  string title = 2;
+  DataType type = 3;
+  bytes data = 4;
+  repeated MetaData metadata = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message CreateUserDataItemRequest {
+  UserDataItem item = 1;
+}
+
+message CreateUserDataItemResponse {
+  UserDataItem item = 1;
+}
+
+message UpdateUserDataItemRequest {
+  UserDataItem item = 1;
+}
+
+message UpdateUserDataItemResponse {
+  UserDataItem item = 1;
+}
+
+message GetUserDataItemRequest {
+  string item_uuid = 1;
+}
+
+message GetUserDataItemResponse {
+  UserDataItem item = 1;
+}
+
+message GetUserDataItemsRequest {
+  repeated string item_uuids = 1;
+}
+
+message GetUserDataItemsResponse {
+  repeated UserDataItem items = 1;
+}
+
+message DeleteUserDataItemsRequest {
+  repeated string item_uuids = 1;
+}
+
+service UserDataService {
+  rpc CreateUserDataItem (CreateUserDataItemRequest) returns (CreateUserDataItemResponse);
+  rpc UpdateUserDataItem (UpdateUserDataItemRequest) returns (UpdateUserDataItemResponse);
+  rpc GetUserDataItem (GetUserDataItemRequest) returns (GetUserDataItemResponse);
+  rpc GetUserDataItems (GetUserDataItemsRequest) returns (GetUserDataItemsResponse);
+  rpc DeleteUserDataItems (DeleteUserDataItemsRequest) returns (google.protobuf.Empty);
+}
